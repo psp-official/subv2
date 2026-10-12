@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: movie-subtitle-translator-myanmar
+    runtime: python
+    plan: free
+    buildCommand: ./build.sh
+    startCommand: gunicorn app:app --workers 1 --threads 4 --timeout 1800
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+        
