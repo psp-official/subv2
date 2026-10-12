@@ -1,0 +1,378 @@
+
+<!DOCTYPE html>
+<html lang="my">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Movie Subtitle Translator</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 20px 14px;
+      background: #0b1020;
+      color: #f4f5ff;
+      font-family: Arial, sans-serif;
+    }
+
+    main {
+      max-width: 850px;
+      margin: auto;
+    }
+
+    h1 {
+      text-align: center;
+      color: #a99bff;
+      font-size: 28px;
+    }
+
+    .description {
+      text-align: center;
+      color: #aeb8d0;
+      line-height: 1.8;
+    }
+
+    .panel {
+      margin-top: 22px;
+      padding: 20px;
+      border: 1px solid #303b59;
+      border-radius: 16px;
+      background: #151d32;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 12px;
+      font-weight: bold;
+    }
+
+    input[type="file"] {
+      width: 100%;
+      padding: 14px;
+      border: 1px dashed #7771cc;
+      border-radius: 10px;
+      background: #0b1020;
+      color: white;
+    }
+
+    button {
+      padding: 12px 16px;
+      border: 0;
+      border-radius: 9px;
+      background: #7968f5;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+    }
+
+    .secondary {
+      background: #34415e;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    #status {
+      margin-top: 15px;
+      line-height: 1.8;
+      overflow-wrap: anywhere;
+    }
+
+    .muted {
+      color: #aeb8d0;
+      font-size: 13px;
+      line-height: 1.8;
+    }
+
+    .subtitle {
+      padding: 15px 0;
+      border-top: 1px solid #303b59;
+    }
+
+    .time, .text {
+      width: 100%;
+      margin-top: 8px;
+      padding: 11px;
+      border: 1px solid #35415e;
+      border-radius: 8px;
+      background: #0b1020;
+      color: white;
+    }
+
+    .text {
+      min-height: 75px;
+      font: inherit;
+      resize: vertical;
+    }
+
+    .source {
+      margin-top: 10px;
+      color: #aeb8d0;
+      font-size: 12px;
+      overflow-wrap: anywhere;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    footer {
+      margin: 25px 0;
+      text-align: center;
+      color: #8290ad;
+      font-size: 12px;
+    }
+  </style>
+</head>
+
+<body>
+<main>
+  <h1>Movie Subtitle Translator</h1>
+
+  <p class="description">
+    တရုတ်ဇာတ်ကားမှ မြန်မာစာတန်းထိုး SRT ဖိုင်ထုတ်ယူရန်
+    <br>
+    ဗီဒီယိုပြန်ထုတ်ခြင်း မပါဝင်ပါ။
+  </p>
+
+  <section class="panel">
+    <label for="video">၁။ ဗီဒီယိုဖိုင်ရွေးပါ</label>
+
+    <input
+      id="video"
+      type="file"
+      accept=".mp4,.mov,.mkv,.webm"
+    >
+
+    <p class="muted">
+      မူရင်းဗီဒီယိုကို မပြောင်းလဲပါ။
+      အသံကိုဖတ်ယူပြီး SRT ဖိုင်ထုတ်ပေးမည်။
+    </p>
+
+    <label for="delaySeconds" style="margin-top: 15px; display: block; margin-bottom: 12px; font-weight: bold;">၂။ စာတန်းနောက်ဆုတ်ရန် (စက္ကန့်)</label>
+    <input 
+      id="delaySeconds" 
+      type="number" 
+      step="0.1" 
+      value="0.0" 
+      style="width: 100%; padding: 14px; border: 1px dashed #7771cc; border-radius: 10px; background: #0b1020; color: white;"
+    >
+    <p class="muted">
+      စာတန်းက အသံထက် စောပေါ်နေပါက 0.5 သို့မဟုတ် 1.0 စသဖြင့် ထည့်ပါ။ ပုံမှန်ဆိုလျှင် 0.0 အတိုင်းထားပါ။
+    </p>
+
+    <div class="actions">
+      <button id="process">ဘာသာပြန်မယ်</button>
+
+      <button id="openSrt" class="secondary">
+        ရှိပြီးသား SRT ဖွင့်မယ်
+      </button>
+
+      <input
+        id="srtFile"
+        type="file"
+        accept=".srt,.txt"
+        class="hidden"
+      >
+    </div>
+
+    <div id="status" role="status"></div>
+  </section>
+
+  <section id="editor" class="panel hidden">
+    <h2>၂။ မြန်မာစာတန်း ပြင်ဆင်ရန်</h2>
+    <p id="count" class="muted"></p>
+
+    <div id="subtitleList"></div>
+
+    <div class="actions">
+      <button id="download">SRT ဖိုင်ဒေါင်းလုဒ်</button>
+      <button id="copy" class="secondary">
+        SRT စာသား Copy
+      </button>
+    </div>
+  </section>
+
+  <footer>
+    SRT only · No video export · No narrator
+  </footer>
+</main>
+
+<script>
+  const $ = id => document.getElementById(id);
+
+  let subtitles = [];
+
+  function setStatus(message) {
+    $("status").textContent = message;
+  }
+
+  function renderSubtitles() {
+    $("editor").classList.remove("hidden");
+    $("count").textContent =
+      "စုစုပေါင်း " + subtitles.length + " ကြောင်း";
+
+    const container = $("subtitleList");
+    container.innerHTML = "";
+
+    subtitles.forEach((item, index) => {
+      const block = document.createElement("div");
+      block.className = "subtitle";
+
+      const title = document.createElement("strong");
+      title.textContent = "စာတန်း " + (index + 1);
+
+      const time = document.createElement("input");
+      time.className = "time";
+      time.value = item.time || "";
+      time.setAttribute("aria-label", "Subtitle timecode");
+      time.addEventListener("input", () => {
+        subtitles[index].time = time.value;
+      });
+
+      const source = document.createElement("div");
+      source.className = "source";
+      source.textContent =
+        "မူရင်းတရုတ်စာ: " + (item.source || "မရှိပါ");
+
+      const text = document.createElement("textarea");
+      text.className = "text";
+      text.value = item.text || "";
+      text.setAttribute("aria-label", "မြန်မာစာတန်း");
+      text.addEventListener("input", () => {
+        subtitles[index].text = text.value;
+      });
+
+      block.append(title, time, source, text);
+      container.appendChild(block);
+    });
+  }
+
+  $("process").addEventListener("click", async () => {
+    const file = $("video").files[0];
+
+    if (!file) {
+      setStatus("ဗီဒီယိုဖိုင်ကို အရင်ရွေးပေးပါ။");
+      return;
+    }
+
+    $("process").disabled = true;
+    setStatus(
+      "လုပ်ဆောင်နေပါပြီ။ ဗီဒီယိုကြာချိန်ပေါ်မူတည်ပြီး စောင့်ရနိုင်ပါတယ်။"
+    );
+
+    try {
+      const form = new FormData();
+      form.append("video", file);
+      form.append("delay", $("delaySeconds").value);
+
+      const response = await fetch("/api/process", {
+        method: "POST",
+        body: form
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "ဘာသာပြန်မအောင်မြင်ပါ။");
+      }
+
+      subtitles = data.items || [];
+      renderSubtitles();
+      setStatus(data.notice || "ပြီးပါပြီ။");
+
+    } catch (error) {
+      setStatus(error.message || "Connection error ဖြစ်နေပါတယ်။");
+    } finally {
+      $("process").disabled = false;
+    }
+  });
+
+  function makeSrt() {
+    return subtitles
+      .filter(item => item.time && item.time.includes("-->"))
+      .map((item, index) =>
+        (index + 1) + "\n" +
+        item.time.trim() + "\n" +
+        (item.text || "").trim()
+      )
+      .filter(block => block.split("\n").slice(2).join("\n").trim())
+      .join("\n\n") + "\n";
+  }
+
+  $("download").addEventListener("click", () => {
+    const content = makeSrt();
+
+    if (!content.trim()) {
+      setStatus("ဒေါင်းလုဒ်လုပ်ရန် စာတန်းမရှိသေးပါ။");
+      return;
+    }
+
+    const blob = new Blob(
+      ["\uFEFF" + content],
+      { type: "application/x-subrip;charset=utf-8" }
+    );
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "myanmar_subtitles.srt";
+    link.click();
+
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+
+  $("copy").addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(makeSrt());
+      setStatus("SRT စာသား Copy လုပ်ပြီးပါပြီ။");
+    } catch {
+      setStatus("Copy မရပါက SRT ဖိုင်ကို ဒေါင်းလုဒ်လုပ်ပါ။");
+    }
+  });
+
+  $("openSrt").addEventListener("click", () => {
+    $("srtFile").click();
+  });
+
+  $("srtFile").addEventListener("change", async () => {
+    const file = $("srtFile").files[0];
+    if (!file) return;
+
+    const content = await file.text();
+
+    subtitles = content
+      .replace(/^\uFEFF/, "")
+      .trim()
+      .split(/\r?\n\s*\r?\n/)
+      .map(block => {
+        const lines = block.split(/\r?\n/);
+
+        if (lines.length < 3 || !lines[1].includes("-->")) {
+          return null;
+        }
+
+        return {
+          time: lines[1].trim(),
+          text: lines.slice(2).join("\n"),
+          source: ""
+        };
+      })
+      .filter(Boolean);
+
+    renderSubtitles();
+    setStatus("SRT ဖိုင်ကို ဖွင့်ပြီးပါပြီ။");
+  });
+</script>
+</body>
+</html>
